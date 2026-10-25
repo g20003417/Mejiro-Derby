@@ -172,7 +172,7 @@
 
     // Googleシートから最新の集計結果を取得して表示
     async function fetchResults() {
-      if (!GAS_WEB_APP_URL || GAS_WEB_APP_URL.includes("YOUR_GAS_WEB_APP_URL")) {
+      if (!GAS_WEB_APP_URL || GAS_WEB_APP_URL.includes("https://script.google.com/macros/s/AKfycbwhl8cB8n_Ixvat1ifhydAlY0su7MMnvZQ4lMadW-RDAbLZVGZWqWA2EREvE6E6nV65/exec")) {
         resultsContainer.innerHTML = `<p class="text-rose-400 text-xs text-center py-2">GASのURLが設定されていません</p>`;
         return;
       }
