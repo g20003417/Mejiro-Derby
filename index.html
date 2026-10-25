@@ -339,44 +339,32 @@
           </button>
         </div>
 
-        <!-- 3. 着順指定（★リセットボタン追加） -->
+        <!-- 3. 着順指定（★ラジオボタン選択形式） -->
         <div class="p-3.5 bg-amber-50 border border-amber-300 rounded-xl space-y-3">
-          <label class="block text-xs font-black text-amber-900 font-heavy-gothic">🏆 着順の確定（1着・2着・3着）</label>
+          <label class="block text-xs font-black text-amber-900 font-heavy-gothic">🏆 着順の確定（1着・2着・3着を選択）</label>
           
-          <div class="space-y-2 text-xs font-bold">
-            <div class="flex items-center gap-2">
-              <span class="w-12 text-amber-800">🥇 1着:</span>
-              <select id="select-win-1st" class="flex-grow p-1.5 border rounded bg-white">
-                <option value="0">未確定</option>
-                <option value="1">1番馬</option><option value="2">2番馬</option><option value="3">3番馬</option>
-                <option value="4">4番馬</option><option value="5">5番馬</option><option value="6">6番馬</option><option value="7">7番馬</option>
-              </select>
-            </div>
-            <div class="flex items-center gap-2">
-              <span class="w-12 text-slate-700">🥈 2着:</span>
-              <select id="select-win-2nd" class="flex-grow p-1.5 border rounded bg-white">
-                <option value="0">未確定</option>
-                <option value="1">1番馬</option><option value="2">2番馬</option><option value="3">3番馬</option>
-                <option value="4">4番馬</option><option value="5">5番馬</option><option value="6">6番馬</option><option value="7">7番馬</option>
-              </select>
-            </div>
-            <div class="flex items-center gap-2">
-              <span class="w-12 text-amber-900">🥉 3着:</span>
-              <select id="select-win-3rd" class="flex-grow p-1.5 border rounded bg-white">
-                <option value="0">未確定</option>
-                <option value="1">1番馬</option><option value="2">2番馬</option><option value="3">3番馬</option>
-                <option value="4">4番馬</option><option value="5">5番馬</option><option value="6">6番馬</option><option value="7">7番馬</option>
-              </select>
+          <div class="bg-white p-2.5 border border-amber-200 rounded-lg">
+            <div class="grid grid-cols-12 text-[11px] font-black text-slate-500 text-center pb-2 border-b border-slate-200">
+              <span class="col-span-4 text-left pl-1">馬番</span>
+              <span class="col-span-2 text-amber-700">🥇1着</span>
+              <span class="col-span-2 text-slate-600">🥈2着</span>
+              <span class="col-span-2 text-amber-900">🥉3着</span>
+              <span class="col-span-2 text-slate-400">解除</span>
             </div>
 
-            <div class="grid grid-cols-2 gap-2 mt-2">
-              <button id="btn-reset-winner" class="py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded text-xs transition font-heavy-gothic border border-slate-300">
-                🔄 着順をリセット
-              </button>
-              <button id="btn-set-winner" class="py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-black rounded text-xs font-heavy-gothic shadow">
-                着順結果を確定
-              </button>
+            <!-- 1〜7番馬の行コンテナ -->
+            <div id="winner-radio-rows" class="divide-y divide-slate-100">
+              <!-- JSで生成 -->
             </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 mt-3">
+            <button id="btn-reset-winner" class="py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-lg text-xs transition font-heavy-gothic border border-slate-300">
+              🔄 全リセット
+            </button>
+            <button id="btn-set-winner" class="py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-black rounded-lg text-xs font-heavy-gothic shadow">
+              着順結果を確定
+            </button>
           </div>
         </div>
 
@@ -499,9 +487,7 @@
     const btnToggleDeliberative = document.getElementById('btn-toggle-deliberative');
     const adminDeliberatingText = document.getElementById('admin-deliberating-text');
 
-    const selectWin1st = document.getElementById('select-win-1st');
-    const selectWin2nd = document.getElementById('select-win-2nd');
-    const selectWin3rd = document.getElementById('select-win-3rd');
+    const winnerRadioRows = document.getElementById('winner-radio-rows');
     const btnSetWinner = document.getElementById('btn-set-winner');
     const btnResetWinner = document.getElementById('btn-reset-winner');
 
@@ -518,9 +504,63 @@
       updateClosedUI();
       renderTanshoOptions();
       initMultiSelects();
+      renderWinnerRadioTable();
       checkVotedStatus();
       
       setInterval(fetchResults, 5000);
+    }
+
+    // 着順選択用ラジオボタンテーブルの作成
+    function renderWinnerRadioTable() {
+      winnerRadioRows.innerHTML = '';
+      for (let i = 1; i <= TOTAL_OPTIONS; i++) {
+        const row = document.createElement('div');
+        row.className = 'grid grid-cols-12 py-2 items-center text-xs border-b border-slate-100 hover:bg-slate-50';
+        row.innerHTML = `
+          <span class="col-span-4 font-bold text-slate-800 pl-1 font-heavy-gothic">${i} 番馬</span>
+          <div class="col-span-2 text-center">
+            <input type="radio" name="rank-1st" value="${i}" id="radio-1st-${i}" class="w-4 h-4 accent-amber-500 cursor-pointer">
+          </div>
+          <div class="col-span-2 text-center">
+            <input type="radio" name="rank-2nd" value="${i}" id="radio-2nd-${i}" class="w-4 h-4 accent-slate-600 cursor-pointer">
+          </div>
+          <div class="col-span-2 text-center">
+            <input type="radio" name="rank-3rd" value="${i}" id="radio-3rd-${i}" class="w-4 h-4 accent-amber-800 cursor-pointer">
+          </div>
+          <div class="col-span-2 text-center">
+            <button type="button" onclick="clearHorseRank(${i})" class="text-[10px] text-slate-400 hover:text-red-500 underline font-bold">クリア</button>
+          </div>
+        `;
+        winnerRadioRows.appendChild(row);
+      }
+    }
+
+    // 個別馬のチェック解除
+    window.clearHorseRank = function(horseNum) {
+      ['rank-1st', 'rank-2nd', 'rank-3rd'].forEach(rankName => {
+        const radio = document.querySelector(`input[name="${rankName}"][value="${horseNum}"]`);
+        if (radio) radio.checked = false;
+      });
+    };
+
+    // UIラジオボタンの状態同期
+    function syncWinnerRadios() {
+      ['rank-1st', 'rank-2nd', 'rank-3rd'].forEach(rName => {
+        document.querySelectorAll(`input[name="${rName}"]`).forEach(r => r.checked = false);
+      });
+
+      if (win1st > 0) {
+        const r1 = document.getElementById(`radio-1st-${win1st}`);
+        if (r1) r1.checked = true;
+      }
+      if (win2nd > 0) {
+        const r2 = document.getElementById(`radio-2nd-${win2nd}`);
+        if (r2) r2.checked = true;
+      }
+      if (win3rd > 0) {
+        const r3 = document.getElementById(`radio-3rd-${win3rd}`);
+        if (r3) r3.checked = true;
+      }
     }
 
     function updateClosedUI() {
@@ -787,10 +827,7 @@
         
         isDeliberating = (data.isDeliberating === true || String(data.isDeliberating) === 'true');
         
-        selectWin1st.value = win1st;
-        selectWin2nd.value = win2nd;
-        selectWin3rd.value = win3rd;
-
+        syncWinnerRadios();
         updateDeliberationUI();
 
         const myType = localStorage.getItem(STORAGE_KEY_TYPE);
@@ -1000,14 +1037,18 @@
       alert(isClosed ? '投票を締め切りました。' : '投票受付を再開しました。');
     };
 
-    // 着順確定処理
+    // 着順確定処理（ラジオボタンの値を取得して送信）
     btnSetWinner.onclick = async () => {
-      const w1 = selectWin1st.value;
-      const w2 = selectWin2nd.value;
-      const w3 = selectWin3rd.value;
+      const r1 = document.querySelector('input[name="rank-1st"]:checked');
+      const r2 = document.querySelector('input[name="rank-2nd"]:checked');
+      const r3 = document.querySelector('input[name="rank-3rd"]:checked');
+
+      const w1 = r1 ? r1.value : "0";
+      const w2 = r2 ? r2.value : "0";
+      const w3 = r3 ? r3.value : "0";
 
       if (w1 === "0") {
-        alert("1着の馬番を選択してください。");
+        alert("🥇 1着の馬番を選択してください。");
         return;
       }
 
@@ -1041,7 +1082,7 @@
 
         } catch (err) {
           console.error(err);
-          alert('送信中にエラーが発生しましたが、ローカル画面の表示を更新しました。');
+          alert('送信中にエラーが発生しましたが、ローカル表示を更新しました。');
           fetchResults();
         }
       }
@@ -1050,15 +1091,16 @@
       btnSetWinner.textContent = '着順結果を確定';
     };
 
-    // ★着順を未確定に戻すリセット処理
+    // 着順を未確定に戻すリセット処理
     btnResetWinner.onclick = async () => {
       if (!confirm("着順結果をクリアして未確定状態に戻しますか？")) return;
 
       btnResetWinner.disabled = true;
 
-      selectWin1st.value = "0";
-      selectWin2nd.value = "0";
-      selectWin3rd.value = "0";
+      // ラジオボタン解除
+      ['rank-1st', 'rank-2nd', 'rank-3rd'].forEach(rName => {
+        document.querySelectorAll(`input[name="${rName}"]`).forEach(r => r.checked = false);
+      });
 
       win1st = 0;
       win2nd = 0;
