@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -95,7 +94,7 @@
 
   <script>
     // ★ここにGoogle Apps Scriptで発行されたウェブアプリのURLを貼り付けてください
-    const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwhl8cB8n_Ixvat1ifhydAlY0su7MMnvZQ4lMadW-RDAbLZVGZWqWA2EREvE6E6nV65/exec";
+    const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxVxPNLs6R7F3BcCNAqPNnrw0prwPCORbLWu_6-jaM/dev";
 
     const TOTAL_OPTIONS = 7;
     const STORAGE_KEY = 'voted_option_id';
@@ -173,7 +172,7 @@
 
     // Googleシートから最新の集計結果を取得して表示
     async function fetchResults() {
-      if (!GAS_WEB_APP_URL || GAS_WEB_APP_URL.includes("https://script.google.com/macros/s/AKfycbwhl8cB8n_Ixvat1ifhydAlY0su7MMnvZQ4lMadW-RDAbLZVGZWqWA2EREvE6E6nV65/exec")) {
+      if (!GAS_WEB_APP_URL || GAS_WEB_APP_URL.includes("YOUR_GAS_WEB_APP_URL")) {
         resultsContainer.innerHTML = `<p class="text-rose-400 text-xs text-center py-2">GASのURLが設定されていません</p>`;
         return;
       }
@@ -238,7 +237,7 @@
       localStorage.setItem(STORAGE_KEY, selectedOption);
       showVotedScreen(selectedOption);
 
-      if (GAS_WEB_APP_URL && !GAS_WEB_APP_URL.includes("https://script.google.com/macros/s/AKfycbwhl8cB8n_Ixvat1ifhydAlY0su7MMnvZQ4lMadW-RDAbLZVGZWqWA2EREvE6E6nV65/exec")) {
+      if (GAS_WEB_APP_URL && !GAS_WEB_APP_URL.includes("YOUR_GAS_WEB_APP_URL")) {
         try {
           // POSTで投票データを送信
           const response = await fetch(GAS_WEB_APP_URL, {
