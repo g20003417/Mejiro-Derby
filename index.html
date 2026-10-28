@@ -118,7 +118,7 @@
         </div>
 
         <div class="mb-4 bg-amber-100 border border-amber-400 text-amber-950 rounded-lg p-2.5 text-center text-xs font-bold font-heavy-gothic shadow-sm">
-          ⚠️ 発券は各レースにつき1端末1形式のみです。<br class="hidden sm:inline">発券後も3回までやり直すことができます。
+          ⚠️ 発券は各レースにつき1端末1形式のみです。<br class="hidden sm:inline">購入確定後は他の形式を選べなくなります。
         </div>
 
         <!-- 式別切替タブ -->
@@ -268,13 +268,6 @@
             </div>
           </div>
 
-          <!-- NEW: 投票やり直し用ボタン（最大3回まで） -->
-          <div id="change-vote-area" class="mt-3">
-            <button id="btn-change-vote" class="w-full py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-black rounded-xl text-xs transition font-heavy-gothic shadow border border-slate-700">
-              🔄 買い目を変更する（残り 3 回）
-            </button>
-          </div>
-
           <div id="redeem-action-area" class="hidden mt-4 pt-3 border-t-2 border-dashed border-amber-300 text-center">
             <button id="btn-redeem" class="w-full py-4 bg-red-600 hover:bg-red-700 text-white font-black rounded-xl text-base shadow-lg transition font-heavy-gothic tracking-wider">
               🎁【窓口用】タップして景品引き換え（払戻済）
@@ -343,19 +336,6 @@
           </div>
         </div>
 
-        <!-- 出走頭数の変更（5〜7頭） -->
-        <div class="p-3.5 bg-purple-50 border-2 border-purple-300 rounded-xl space-y-2">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-black text-purple-950 font-heavy-gothic">🐎 出走頭数の設定</span>
-            <span id="admin-total-options-display" class="text-xs font-black bg-purple-800 text-white px-2 py-0.5 rounded">7頭立て</span>
-          </div>
-          <div class="grid grid-cols-3 gap-2">
-            <button id="btn-set-options-5" class="py-1.5 bg-slate-200 text-slate-700 font-bold rounded text-xs font-heavy-gothic hover:bg-purple-200">5頭</button>
-            <button id="btn-set-options-6" class="py-1.5 bg-slate-200 text-slate-700 font-bold rounded text-xs font-heavy-gothic hover:bg-purple-200">6頭</button>
-            <button id="btn-set-options-7" class="py-1.5 bg-purple-700 text-white font-black rounded text-xs font-heavy-gothic shadow">7頭</button>
-          </div>
-        </div>
-
         <!-- 1. 締め切りスイッチ -->
         <div class="p-3.5 bg-slate-100 rounded-xl space-y-2">
           <div class="flex items-center justify-between">
@@ -391,7 +371,7 @@
               <span class="col-span-2 text-slate-400">解除</span>
             </div>
 
-            <!-- 馬番ごとの行コンテナ -->
+            <!-- 1〜7番馬の行コンテナ -->
             <div id="winner-radio-rows" class="divide-y divide-slate-100"></div>
           </div>
 
@@ -450,9 +430,9 @@
 
   <script>
     // ★Google Apps ScriptのWebアプリURL（末尾が /exec のもの）を設定してください
-    const GAS_WEB_APP_URL = "YOUR_GAS_WEB_APP_URL_HERE";
+    const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwT0dSaq4FjLMErC57W0OX-bOd2EUVQ3TlQZCMCKIc0QfDbcYw59i7i-Gba0E6odnbe/exec";
 
-    let TOTAL_OPTIONS = 7;
+    const TOTAL_OPTIONS = 7;
     let currentRaceDay = 1;
 
     let currentTicketType = 'tansho';
@@ -462,8 +442,6 @@
     let win1st = 0, win2nd = 0, win3rd = 0;
     
     let isAdminOpen = false;
-
-    const MAX_RETRY_COUNT = 3;
 
     const headerRaceTag = document.getElementById('header-race-tag');
     const deliberationScreen = document.getElementById('deliberation-screen');
@@ -502,9 +480,6 @@
     const votedStatusTag = document.getElementById('voted-status-tag');
     const votedTicketTypeTitle = document.getElementById('voted-ticket-type-title');
     
-    const changeVoteArea = document.getElementById('change-vote-area');
-    const btnChangeVote = document.getElementById('btn-change-vote');
-
     const redeemActionArea = document.getElementById('redeem-action-area');
     const btnRedeem = document.getElementById('btn-redeem');
     const redeemedStamp = document.getElementById('redeemed-stamp');
@@ -533,11 +508,6 @@
     const btnSetRace2 = document.getElementById('btn-set-race-2');
     const adminCurrentRaceDisplay = document.getElementById('admin-current-race-display');
 
-    const adminTotalOptionsDisplay = document.getElementById('admin-total-options-display');
-    const btnSetOptions5 = document.getElementById('btn-set-options-5');
-    const btnSetOptions6 = document.getElementById('btn-set-options-6');
-    const btnSetOptions7 = document.getElementById('btn-set-options-7');
-
     const winnerRadioRows = document.getElementById('winner-radio-rows');
     const btnSetWinner = document.getElementById('btn-set-winner');
     const btnResetWinner = document.getElementById('btn-reset-winner');
@@ -551,29 +521,12 @@
     const btnResetDeviceVote = document.getElementById('btn-reset-device-vote');
 
     function init() {
+      renderTanshoOptions();
+      initMultiSelects();
+      renderWinnerRadioTable();
       fetchResults(true);
+      
       setInterval(fetchResults, 5000);
-    }
-
-    // やり直し残回数の取得（初期値: 3）
-    function getRemainingRetryCount() {
-      const key = `retry_count_race_${currentRaceDay}`;
-      const saved = localStorage.getItem(key);
-      if (saved === null) {
-        localStorage.setItem(key, String(MAX_RETRY_COUNT));
-        return MAX_RETRY_COUNT;
-      }
-      return Number(saved);
-    }
-
-    // やり直し残回数の更新
-    function decrementRetryCount() {
-      let count = getRemainingRetryCount();
-      if (count > 0) {
-        count--;
-        localStorage.setItem(`retry_count_race_${currentRaceDay}`, String(count));
-      }
-      return count;
     }
 
     function renderWinnerRadioTable() {
@@ -612,15 +565,15 @@
         document.querySelectorAll(`input[name="${rName}"]`).forEach(r => r.checked = false);
       });
 
-      if (win1st > 0 && win1st <= TOTAL_OPTIONS) {
+      if (win1st > 0) {
         const r1 = document.getElementById(`radio-1st-${win1st}`);
         if (r1) r1.checked = true;
       }
-      if (win2nd > 0 && win2nd <= TOTAL_OPTIONS) {
+      if (win2nd > 0) {
         const r2 = document.getElementById(`radio-2nd-${win2nd}`);
         if (r2) r2.checked = true;
       }
-      if (win3rd > 0 && win3rd <= TOTAL_OPTIONS) {
+      if (win3rd > 0) {
         const r3 = document.getElementById(`radio-3rd-${win3rd}`);
         if (r3) r3.checked = true;
       }
@@ -659,7 +612,7 @@
     }
 
     function updateRaceDayUI() {
-      headerRaceTag.textContent = `${currentRaceDay}日目レース開催中 (${TOTAL_OPTIONS}頭立て)`;
+      headerRaceTag.textContent = `${currentRaceDay}日目レース開催中`;
       adminCurrentRaceDisplay.textContent = `${currentRaceDay}日目レース`;
 
       if (currentRaceDay === 1) {
@@ -670,27 +623,11 @@
         btnSetRace2.className = "py-2 bg-brand-green text-white font-black rounded text-xs font-heavy-gothic shadow";
       }
 
-      updateTotalOptionsUI();
-
       isClosed = localStorage.getItem(`is_closed_race_${currentRaceDay}`) === 'true';
       updateClosedUI();
       renderTanshoOptions();
       initMultiSelects();
-      renderWinnerRadioTable();
       checkVotedStatus();
-    }
-
-    function updateTotalOptionsUI() {
-      adminTotalOptionsDisplay.textContent = `${TOTAL_OPTIONS}頭立て`;
-      
-      [btnSetOptions5, btnSetOptions6, btnSetOptions7].forEach((btn, idx) => {
-        const count = idx + 5;
-        if (count === TOTAL_OPTIONS) {
-          btn.className = "py-1.5 bg-purple-700 text-white font-black rounded text-xs font-heavy-gothic shadow";
-        } else {
-          btn.className = "py-1.5 bg-slate-200 text-slate-700 font-bold rounded text-xs font-heavy-gothic hover:bg-purple-200";
-        }
-      });
     }
 
     function renderTanshoOptions() {
@@ -812,8 +749,8 @@
     }
 
     function checkVotedStatus() {
-      const savedType = localStorage.getItem(`voted_ticket_type_race_${currentRaceDay}`);
-      const savedOption = localStorage.getItem(`voted_option_id_race_${currentRaceDay}`);
+      const savedType = localStorage.getItem(`${STORAGE_KEY_TYPE}_race_${currentRaceDay}`);
+      const savedOption = localStorage.getItem(`${STORAGE_KEY_OPTION}_race_${currentRaceDay}`);
 
       if (savedType && savedOption) {
         currentTicketType = savedType;
@@ -838,16 +775,7 @@
     }
 
     function applyTicketResultStyle(type, myOptionId) {
-      const isRedeemed = localStorage.getItem(`is_prize_redeemed_race_${currentRaceDay}`) === 'true';
-      const remainingRetries = getRemainingRetryCount();
-
-      // やり直しボタンの表示制御
-      if (remainingRetries > 0 && !isClosed && !isRedeemed && (!win1st || win1st === 0)) {
-        changeVoteArea.classList.remove('hidden');
-        btnChangeVote.textContent = `🔄 買い目を変更する（残り ${remainingRetries} 回）`;
-      } else {
-        changeVoteArea.classList.add('hidden');
-      }
+      const isRedeemed = localStorage.getItem(`${REDEEMED_KEY}_race_${currentRaceDay}`) === 'true';
 
       if (isRedeemed) {
         votedCard.className = "bg-slate-100 border-4 border-slate-400 rounded-xl p-5 shadow-xl relative overflow-hidden";
@@ -859,7 +787,6 @@
         votedStatusTag.textContent = "払戻手続き完了";
         redeemedStamp.classList.remove('hidden');
         redeemActionArea.classList.add('hidden');
-        changeVoteArea.classList.add('hidden');
         return;
       }
 
@@ -879,7 +806,6 @@
 
       officialResultBanner.classList.remove('hidden');
       officialResultText.textContent = `🏆 1着:${win1st} / 2着:${win2nd || '-'} / 3着:${win3rd || '-'}`;
-      changeVoteArea.classList.add('hidden');
 
       let isHit = false;
 
@@ -920,32 +846,6 @@
       }
     }
 
-    // 買い目変更ボタンのタップ処理
-    btnChangeVote.onclick = () => {
-      const remaining = getRemainingRetryCount();
-      if (remaining <= 0) {
-        alert('やり直しの上限回数（3回）に達しているため変更できません。');
-        return;
-      }
-      if (isClosed) {
-        alert('投票受付が終了（締め切り）しているため変更できません。');
-        return;
-      }
-
-      if (confirm(`買い目を変更しますか？\n（残り ${remaining} 回やり直し可能）`)) {
-        decrementRetryCount();
-        
-        // 旧投票データをクリアしてマークシート画面へ
-        localStorage.removeItem(`voted_ticket_type_race_${currentRaceDay}`);
-        localStorage.removeItem(`voted_option_id_race_${currentRaceDay}`);
-        selectedOption = null;
-        
-        renderTanshoOptions();
-        initMultiSelects();
-        showStep(elSelect);
-      }
-    };
-
     async function fetchResults(force = false) {
       if (!GAS_WEB_APP_URL || GAS_WEB_APP_URL.includes("YOUR_GAS_WEB_APP_URL")) {
         resultsContainer.innerHTML = `<p class="text-amber-300 text-xs text-center py-2">GASのURLが未設定です</p>`;
@@ -959,7 +859,6 @@
         const data = await response.json();
         
         currentRaceDay = Number(data.currentRace || 1);
-        TOTAL_OPTIONS = Number(data.totalOptions || 7);
         win1st = Number(data.win1st || 0);
         win2nd = Number(data.win2nd || 0);
         win3rd = Number(data.win3rd || 0);
@@ -973,8 +872,8 @@
 
         updateDeliberationUI();
 
-        const myType = localStorage.getItem(`voted_ticket_type_race_${currentRaceDay}`);
-        const myOption = localStorage.getItem(`voted_option_id_race_${currentRaceDay}`);
+        const myType = localStorage.getItem(`${STORAGE_KEY_TYPE}_race_${currentRaceDay}`);
+        const myOption = localStorage.getItem(`${STORAGE_KEY_OPTION}_race_${currentRaceDay}`);
         if (myOption && myType) applyTicketResultStyle(myType, myOption);
 
         renderResultsGraph(data);
@@ -988,8 +887,8 @@
     function renderResultsGraph(data) {
       const total = data.totalTansho || 0;
       const counts = data.tanshoCounts || {};
-      const myType = localStorage.getItem(`voted_ticket_type_race_${currentRaceDay}`);
-      const myOption = localStorage.getItem(`voted_option_id_race_${currentRaceDay}`);
+      const myType = localStorage.getItem(`${STORAGE_KEY_TYPE}_race_${currentRaceDay}`);
+      const myOption = localStorage.getItem(`${STORAGE_KEY_OPTION}_race_${currentRaceDay}`);
 
       totalVotesCount.textContent = `単勝総票数 (${currentRaceDay}日目): ${total} 票`;
       resultsContainer.innerHTML = '';
@@ -1046,28 +945,7 @@
       }
     }
 
-    async function switchTotalOptions(count) {
-      if (TOTAL_OPTIONS === count) return;
-
-      try {
-        await fetch(GAS_WEB_APP_URL, {
-          method: 'POST',
-          mode: 'cors',
-          headers: { 'Content-Type': 'text/plain' },
-          body: JSON.stringify({ action: 'setTotalOptions', totalOptions: count })
-        });
-        await fetchResults(true);
-        alert(`${currentRaceDay}日目の出走頭数を【${count}頭立て】に変更しました！`);
-      } catch (e) {
-        console.error(e);
-        alert('出走頭数の変更処理でエラーが発生しました');
-      }
-    }
-
-    btnSetOptions5.onclick = () => switchTotalOptions(5);
-    btnSetOptions6.onclick = () => switchTotalOptions(6);
-    btnSetOptions7.onclick = () => switchTotalOptions(7);
-
+    // レース切替処理 (1日目 / 2日目)
     async function switchRaceDay(targetDay) {
       if (currentRaceDay === targetDay) return;
       
@@ -1091,24 +969,23 @@
 
     btnResetDeviceVote.onclick = () => {
       if (confirm(`この端末の【${currentRaceDay}日目】の投票履歴をクリアして未投票状態に戻しますか？`)) {
-        localStorage.removeItem(`voted_ticket_type_race_${currentRaceDay}`);
-        localStorage.removeItem(`voted_option_id_race_${currentRaceDay}`);
-        localStorage.removeItem(`is_prize_redeemed_race_${currentRaceDay}`);
-        localStorage.setItem(`retry_count_race_${currentRaceDay}`, String(MAX_RETRY_COUNT));
+        localStorage.removeItem(`${STORAGE_KEY_TYPE}_race_${currentRaceDay}`);
+        localStorage.removeItem(`${STORAGE_KEY_OPTION}_race_${currentRaceDay}`);
+        localStorage.removeItem(`${REDEEMED_KEY}_race_${currentRaceDay}`);
         selectedOption = null;
         isAdminOpen = false;
         adminModal.classList.add('hidden');
         showStep(elSelect);
         renderTanshoOptions();
         initMultiSelects();
-        alert(`${currentRaceDay}日目の投票履歴をリセットしました（やり直し回数も3回に復元）。`);
+        alert(`${currentRaceDay}日目の投票履歴をリセットしました。`);
       }
     };
 
     btnRedeem.onclick = () => {
-      localStorage.setItem(`is_prize_redeemed_race_${currentRaceDay}`, 'true');
-      const myType = localStorage.getItem(`voted_ticket_type_race_${currentRaceDay}`);
-      const myOption = localStorage.getItem(`voted_option_id_race_${currentRaceDay}`);
+      localStorage.setItem(`${REDEEMED_KEY}_race_${currentRaceDay}`, 'true');
+      const myType = localStorage.getItem(`${STORAGE_KEY_TYPE}_race_${currentRaceDay}`);
+      const myOption = localStorage.getItem(`${STORAGE_KEY_OPTION}_race_${currentRaceDay}`);
       applyTicketResultStyle(myType, myOption);
     };
 
@@ -1128,8 +1005,8 @@
       btnSubmit.disabled = true;
       btnSubmit.textContent = '発券処理中...';
 
-      localStorage.setItem(`voted_ticket_type_race_${currentRaceDay}`, currentTicketType);
-      localStorage.setItem(`voted_option_id_race_${currentRaceDay}`, selectedOption);
+      localStorage.setItem(`${STORAGE_KEY_TYPE}_race_${currentRaceDay}`, currentTicketType);
+      localStorage.setItem(`${STORAGE_KEY_OPTION}_race_${currentRaceDay}`, selectedOption);
       showVotedScreen(currentTicketType, selectedOption);
 
       if (GAS_WEB_APP_URL && !GAS_WEB_APP_URL.includes("YOUR_GAS_WEB_APP_URL")) {
