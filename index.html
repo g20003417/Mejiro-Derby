@@ -66,7 +66,6 @@
 
   <!-- ヘッダー -->
   <header class="bg-brand-dark border-b-4 border-emerald-950 shadow-xl py-3 px-4 text-center relative z-50">
-    <!-- 左上：ルール・景品ボタン -->
     <button id="btn-open-rules" class="absolute left-3 top-1/2 -translate-y-1/2 text-amber-300 p-2 text-xs font-black flex items-center gap-1 bg-amber-950/60 hover:bg-amber-900/80 border border-amber-400/50 rounded-lg transition font-heavy-gothic">
       📖 ルール・景品
     </button>
@@ -84,7 +83,6 @@
       <span class="text-xl sm:text-2xl drop-shadow">🏇</span>
     </div>
     
-    <!-- 右上：管理ボタン -->
     <button id="btn-open-admin" class="absolute right-3 top-1/2 -translate-y-1/2 text-white p-2 text-xs font-bold flex items-center gap-1 bg-black/40 hover:bg-black/60 border border-white/30 rounded-lg transition">
       ⚙️ 管理
     </button>
@@ -215,6 +213,11 @@
         <button id="btn-confirm" disabled class="w-full mt-6 py-3.5 rounded-xl font-black text-base bg-slate-300 text-slate-500 cursor-not-allowed transition-all duration-150 border-b-4 border-slate-400 font-heavy-gothic">
           発券確認画面へ
         </button>
+
+        <!-- 注意書き -->
+        <p class="text-[10px] text-slate-500 text-center mt-3 font-bold">
+          ※画面更新や情報の反映に時間がかかる場合がございます。
+        </p>
       </section>
 
       <!-- STEP 2: 確認画面 -->
@@ -248,6 +251,11 @@
             投票確定（購入）
           </button>
         </div>
+
+        <!-- 注意書き -->
+        <p class="text-[10px] text-slate-500 text-center mt-3 font-bold">
+          ※画面更新や情報の反映に時間がかかる場合がございます。
+        </p>
       </section>
 
       <!-- STEP 3: 投票完了・結果表示 -->
@@ -313,6 +321,11 @@
             <p class="text-center text-emerald-300 text-xs py-4">最新オッズを計算中...</p>
           </div>
         </div>
+
+        <!-- 注意書き -->
+        <p class="text-[10px] text-emerald-200/80 text-center mt-3 font-bold">
+          ※画面更新や情報の反映に時間がかかる場合がございます。
+        </p>
       </section>
 
     </div>
@@ -330,7 +343,6 @@
         </h3>
       </div>
 
-      <!-- アプリと紙の違い -->
       <div class="bg-white border-2 border-amber-200 rounded-xl p-4 shadow-sm space-y-2">
         <h4 class="text-sm font-black text-brand-green flex items-center gap-1 font-heavy-gothic">
           📱 このWebアプリだけの特別ルール！
@@ -340,7 +352,6 @@
         </p>
       </div>
 
-      <!-- 券種と景品一覧 -->
       <div class="space-y-2.5">
         <h4 class="text-sm font-black text-slate-900 font-heavy-gothic flex items-center gap-1">
           🍬 的中景品（飴のつかみ取り）一覧
@@ -380,7 +391,6 @@
         </div>
       </div>
 
-      <!-- 景品引換方法 -->
       <div class="bg-slate-100 border border-slate-300 rounded-xl p-3.5 text-xs text-slate-600 space-y-1">
         <p class="font-black text-slate-800 font-heavy-gothic">💡 景品の受け取り方</p>
         <p class="leading-relaxed">
@@ -411,7 +421,6 @@
 
       <div id="admin-controls" class="hidden space-y-5">
         
-        <!-- レース切り替え（1日目 / 2日目） -->
         <div class="p-3.5 bg-emerald-100 border-2 border-emerald-400 rounded-xl space-y-2">
           <div class="flex items-center justify-between">
             <span class="text-xs font-black text-emerald-950 font-heavy-gothic">🏁 現在の対象レース</span>
@@ -427,7 +436,6 @@
           </div>
         </div>
 
-        <!-- 出走頭数の変更（5〜7頭） -->
         <div class="p-3.5 bg-purple-50 border-2 border-purple-300 rounded-xl space-y-2">
           <div class="flex items-center justify-between">
             <span class="text-xs font-black text-purple-950 font-heavy-gothic">🐎 出走頭数の設定</span>
@@ -440,23 +448,19 @@
           </div>
         </div>
 
-        <!-- NEW: 馬名・騎手名の設定 -->
         <div class="p-3.5 bg-sky-50 border-2 border-sky-300 rounded-xl space-y-3">
           <div class="flex items-center justify-between border-b border-sky-200 pb-1.5">
             <span class="text-xs font-black text-sky-950 font-heavy-gothic">🐴 出走馬・騎手名の編集</span>
             <span class="text-[10px] text-sky-700 font-bold">（空欄時は"〇番馬"表記）</span>
           </div>
 
-          <div id="horse-name-inputs-container" class="space-y-2 max-h-48 overflow-y-auto pr-1">
-            <!-- JSで動的生成 -->
-          </div>
+          <div id="horse-name-inputs-container" class="space-y-2 max-h-48 overflow-y-auto pr-1"></div>
 
           <button id="btn-save-horse-names" class="w-full py-2 bg-sky-600 hover:bg-sky-700 text-white font-black rounded-lg text-xs font-heavy-gothic shadow">
             💾 馬名・騎手名を保存する
           </button>
         </div>
 
-        <!-- 1. 締め切りスイッチ -->
         <div class="p-3.5 bg-slate-100 rounded-xl space-y-2">
           <div class="flex items-center justify-between">
             <span class="text-xs font-bold text-slate-500">現在の投票状況</span>
@@ -467,7 +471,6 @@
           </button>
         </div>
 
-        <!-- 2. 審議中切り替えスイッチ -->
         <div class="p-3.5 bg-blue-50 border border-blue-300 rounded-xl space-y-2">
           <div class="flex items-center justify-between">
             <span class="text-xs font-bold text-blue-900 font-heavy-gothic">⚖️ 審議中ステータス</span>
@@ -478,7 +481,6 @@
           </button>
         </div>
 
-        <!-- 3. 着順指定（ラジオボタン表） -->
         <div class="p-3.5 bg-amber-50 border border-amber-300 rounded-xl space-y-3">
           <label class="block text-xs font-black text-amber-900 font-heavy-gothic">🏆 着順の確定（1着・2着・3着を選択）</label>
           
@@ -549,12 +551,12 @@
 
   <script>
     // ★Google Apps ScriptのWebアプリURL（末尾が /exec のもの）を設定してください
-    const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzGK6PvKleKIVyQO6Y9z7RA1EPt6BeIC_XeI-FW3JPyBgDD79xv52r32JztygTy0y_b/exec";
+    const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbysLoXMUTQjC1jZ2VudhieFDDgzsZjv0LjoSXbcBpdhLOVgnODrzu5LT5Xu8mX_gsPV/exec";
 
     let TOTAL_OPTIONS = 7;
     let currentRaceDay = 1;
 
-    let horseNamesMap = {}; // { 1: { name: "〇〇", rider: "〇〇" }, ... }
+    let horseNameMap = {};
 
     let currentTicketType = 'tansho';
     let selectedOption = null;
@@ -615,7 +617,6 @@
     const resultsContainer = document.getElementById('results-container');
     const totalVotesCount = document.getElementById('total-votes-count');
 
-    // モーダル関連
     const rulesModal = document.getElementById('rules-modal');
     const btnOpenRules = document.getElementById('btn-open-rules');
     const btnCloseRules = document.getElementById('btn-close-rules');
@@ -663,7 +664,6 @@
       setInterval(fetchResults, 5000);
     }
 
-    // 馬名・騎手名表記のフォーマット関数
     function getHorseLabel(num, showFull = true) {
       const info = horseNameMap[num];
       if (!info || (!info.name && !info.rider)) {
@@ -675,7 +675,6 @@
       return label;
     }
 
-    // やり直し残回数の取得（初期値: 3）
     function getRemainingRetryCount() {
       const key = `retry_count_race_${currentRaceDay}`;
       const saved = localStorage.getItem(key);
@@ -695,7 +694,6 @@
       return count;
     }
 
-    // 管理画面の馬名入力欄を生成
     function renderHorseNameInputs() {
       horseNameInputsContainer.innerHTML = '';
       for (let i = 1; i <= TOTAL_OPTIONS; i++) {
@@ -965,7 +963,6 @@
       target.classList.remove('hidden');
     }
 
-    // 買い目を馬名・騎手名付き文字列に変換
     function formatOptionWithHorseNames(type, optionId) {
       if (type === 'tansho') {
         return getHorseLabel(Number(optionId));
@@ -1069,7 +1066,8 @@
       }
     }
 
-    btnChangeVote.onclick = () => {
+    // ★改善：やり直し時にGASに「旧投票打ち消し」を送信する
+    btnChangeVote.onclick = async () => {
       const remaining = getRemainingRetryCount();
       if (remaining <= 0) {
         alert('やり直しの上限回数（3回）に達しているため変更できません。');
@@ -1081,11 +1079,27 @@
       }
 
       if (confirm(`買い目を変更しますか？\n（残り ${remaining} 回やり直し可能）`)) {
+        const oldType = localStorage.getItem(`voted_ticket_type_race_${currentRaceDay}`);
+        const oldOption = localStorage.getItem(`voted_option_id_race_${currentRaceDay}`);
+
         decrementRetryCount();
         localStorage.removeItem(`voted_ticket_type_race_${currentRaceDay}`);
         localStorage.removeItem(`voted_option_id_race_${currentRaceDay}`);
         selectedOption = null;
-        
+
+        // GASへ旧データの打ち消しリクエスト（裏で送信）
+        if (GAS_WEB_APP_URL && !GAS_WEB_APP_URL.includes("YOUR_GAS_WEB_APP_URL") && oldType && oldOption) {
+          fetch(GAS_WEB_APP_URL, {
+            method: 'POST',
+            mode: 'cors',
+            headers: { 'Content-Type': 'text/plain' },
+            body: JSON.stringify({ action: 'cancelVote', type: oldType, option: oldOption })
+          }).then(res => res.json()).then(data => {
+            renderResultsGraph(data);
+            renderAdminData(data);
+          }).catch(err => console.error(err));
+        }
+
         renderTanshoOptions();
         initMultiSelects();
         showStep(elSelect);
@@ -1194,7 +1208,6 @@
       }
     }
 
-    // 馬名・騎手名保存処理
     btnSaveHorseNames.onclick = async () => {
       const newNames = {};
       for (let i = 1; i <= TOTAL_OPTIONS; i++) {
@@ -1331,7 +1344,6 @@
       btnSubmit.textContent = '投票確定（購入）';
     };
 
-    // ルール・景品モーダルの開閉イベント
     btnOpenRules.onclick = () => rulesModal.classList.remove('hidden');
     btnCloseRules.onclick = () => rulesModal.classList.add('hidden');
     btnCloseRulesBottom.onclick = () => rulesModal.classList.add('hidden');
