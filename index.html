@@ -214,7 +214,6 @@
           発券確認画面へ
         </button>
 
-        <!-- 注意書き -->
         <p class="text-[10px] text-slate-500 text-center mt-3 font-bold">
           ※画面更新や情報の反映に時間がかかる場合がございます。
         </p>
@@ -252,7 +251,6 @@
           </button>
         </div>
 
-        <!-- 注意書き -->
         <p class="text-[10px] text-slate-500 text-center mt-3 font-bold">
           ※画面更新や情報の反映に時間がかかる場合がございます。
         </p>
@@ -322,7 +320,6 @@
           </div>
         </div>
 
-        <!-- 注意書き -->
         <p class="text-[10px] text-emerald-200/80 text-center mt-3 font-bold">
           ※画面更新や情報の反映に時間がかかる場合がございます。
         </p>
@@ -551,7 +548,7 @@
 
   <script>
     // ★Google Apps ScriptのWebアプリURL（末尾が /exec のもの）を設定してください
-    const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbysLoXMUTQjC1jZ2VudhieFDDgzsZjv0LjoSXbcBpdhLOVgnODrzu5LT5Xu8mX_gsPV/exec";
+    const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbx34GC6U_IWvCpu5R0FO1DDcIM3jseikuWOKS0yp0rVMwk6GcR5Z7OjQ-56ypFxfMNh/exec";
 
     let TOTAL_OPTIONS = 7;
     let currentRaceDay = 1;
@@ -659,9 +656,28 @@
     const btnChangePass = document.getElementById('btn-change-pass');
     const btnResetDeviceVote = document.getElementById('btn-reset-device-vote');
 
+    // ★スマートリトライ機能付き fetch 関数（高負荷対策）
+    async function fetchWithRetry(url, options = {}, retries = 4, backoff = 400) {
+      for (let i = 0; i < retries; i++) {
+        try {
+          const res = await fetch(url, options);
+          if (res.ok) {
+            const data = await res.json();
+            if (data && data.success !== false) return data;
+          }
+        } catch (err) {
+          console.warn(`Fetch retry attempt ${i + 1} failed:`, err);
+        }
+        // 指数バックオフ + ジッター（ランダム要素）で送信を分散
+        const delay = backoff * Math.pow(2, i) + Math.random() * 300;
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+      return null;
+    }
+
     function init() {
       fetchResults(true);
-      setInterval(fetchResults, 5000);
+      setInterval(fetchResults, 12000); // 12秒ごとに自動更新
     }
 
     function getHorseLabel(num, showFull = true) {
@@ -1066,7 +1082,6 @@
       }
     }
 
-    // ★改善：やり直し時にGASに「旧投票打ち消し」を送信する
     btnChangeVote.onclick = async () => {
       const remaining = getRemainingRetryCount();
       if (remaining <= 0) {
@@ -1087,17 +1102,18 @@
         localStorage.removeItem(`voted_option_id_race_${currentRaceDay}`);
         selectedOption = null;
 
-        // GASへ旧データの打ち消しリクエスト（裏で送信）
         if (GAS_WEB_APP_URL && !GAS_WEB_APP_URL.includes("YOUR_GAS_WEB_APP_URL") && oldType && oldOption) {
-          fetch(GAS_WEB_APP_URL, {
+          fetchWithRetry(GAS_WEB_APP_URL, {
             method: 'POST',
             mode: 'cors',
             headers: { 'Content-Type': 'text/plain' },
             body: JSON.stringify({ action: 'cancelVote', type: oldType, option: oldOption })
-          }).then(res => res.json()).then(data => {
-            renderResultsGraph(data);
-            renderAdminData(data);
-          }).catch(err => console.error(err));
+          }).then(data => {
+            if (data) {
+              renderResultsGraph(data);
+              renderAdminData(data);
+            }
+          });
         }
 
         renderTanshoOptions();
@@ -1114,37 +1130,32 @@
 
       if (isAdminOpen && !force) return;
 
-      try {
-        const response = await fetch(GAS_WEB_APP_URL);
-        const data = await response.json();
-        
-        currentRaceDay = Number(data.currentRace || 1);
-        TOTAL_OPTIONS = Number(data.totalOptions || 7);
-        horseNameMap = data.horseNames || {};
+      const data = await fetchWithRetry(GAS_WEB_APP_URL);
+      if (!data) return;
+      
+      currentRaceDay = Number(data.currentRace || 1);
+      TOTAL_OPTIONS = Number(data.totalOptions || 7);
+      horseNameMap = data.horseNames || {};
 
-        win1st = Number(data.win1st || 0);
-        win2nd = Number(data.win2nd || 0);
-        win3rd = Number(data.win3rd || 0);
-        isDeliberating = (data.isDeliberating === true || String(data.isDeliberating) === 'true');
-        
-        updateRaceDayUI();
+      win1st = Number(data.win1st || 0);
+      win2nd = Number(data.win2nd || 0);
+      win3rd = Number(data.win3rd || 0);
+      isDeliberating = (data.isDeliberating === true || String(data.isDeliberating) === 'true');
+      
+      updateRaceDayUI();
 
-        if (!isAdminOpen || force) {
-          syncWinnerRadios();
-        }
-
-        updateDeliberationUI();
-
-        const myType = localStorage.getItem(`voted_ticket_type_race_${currentRaceDay}`);
-        const myOption = localStorage.getItem(`voted_option_id_race_${currentRaceDay}`);
-        if (myOption && myType) applyTicketResultStyle(myType, myOption);
-
-        renderResultsGraph(data);
-        renderAdminData(data);
-      } catch (err) {
-        console.error(err);
-        resultsContainer.innerHTML = `<p class="text-red-300 text-xs text-center py-2">データの取得に失敗しました</p>`;
+      if (!isAdminOpen || force) {
+        syncWinnerRadios();
       }
+
+      updateDeliberationUI();
+
+      const myType = localStorage.getItem(`voted_ticket_type_race_${currentRaceDay}`);
+      const myOption = localStorage.getItem(`voted_option_id_race_${currentRaceDay}`);
+      if (myOption && myType) applyTicketResultStyle(myType, myOption);
+
+      renderResultsGraph(data);
+      renderAdminData(data);
     }
 
     function renderResultsGraph(data) {
@@ -1219,17 +1230,17 @@
       btnSaveHorseNames.disabled = true;
       btnSaveHorseNames.textContent = '保存中...';
 
-      try {
-        await fetch(GAS_WEB_APP_URL, {
-          method: 'POST',
-          mode: 'cors',
-          headers: { 'Content-Type': 'text/plain' },
-          body: JSON.stringify({ action: 'setHorseNames', horseNames: newNames })
-        });
+      const data = await fetchWithRetry(GAS_WEB_APP_URL, {
+        method: 'POST',
+        mode: 'cors',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action: 'setHorseNames', horseNames: newNames })
+      });
+
+      if (data) {
         await fetchResults(true);
         alert(`${currentRaceDay}日目の馬名・騎手名を保存しました！`);
-      } catch (e) {
-        console.error(e);
+      } else {
         alert('保存処理でエラーが発生しました');
       }
 
@@ -1240,17 +1251,17 @@
     async function switchTotalOptions(count) {
       if (TOTAL_OPTIONS === count) return;
 
-      try {
-        await fetch(GAS_WEB_APP_URL, {
-          method: 'POST',
-          mode: 'cors',
-          headers: { 'Content-Type': 'text/plain' },
-          body: JSON.stringify({ action: 'setTotalOptions', totalOptions: count })
-        });
+      const data = await fetchWithRetry(GAS_WEB_APP_URL, {
+        method: 'POST',
+        mode: 'cors',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action: 'setTotalOptions', totalOptions: count })
+      });
+
+      if (data) {
         await fetchResults(true);
         alert(`${currentRaceDay}日目の出走頭数を【${count}頭立て】に変更しました！`);
-      } catch (e) {
-        console.error(e);
+      } else {
         alert('出走頭数の変更処理でエラーが発生しました');
       }
     }
@@ -1262,17 +1273,17 @@
     async function switchRaceDay(targetDay) {
       if (currentRaceDay === targetDay) return;
       
-      try {
-        await fetch(GAS_WEB_APP_URL, {
-          method: 'POST',
-          mode: 'cors',
-          headers: { 'Content-Type': 'text/plain' },
-          body: JSON.stringify({ action: 'setCurrentRace', raceDay: targetDay })
-        });
+      const data = await fetchWithRetry(GAS_WEB_APP_URL, {
+        method: 'POST',
+        mode: 'cors',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action: 'setCurrentRace', raceDay: targetDay })
+      });
+
+      if (data) {
         await fetchResults(true);
         alert(`${targetDay}日目レースに切り替えました！`);
-      } catch (e) {
-        console.error(e);
+      } else {
         alert('レース切り替え処理でエラーが発生しました');
       }
     }
@@ -1319,24 +1330,22 @@
       btnSubmit.disabled = true;
       btnSubmit.textContent = '発券処理中...';
 
+      // 即時画面反映（ユーザーの体感待ち時間をゼロ化）
       localStorage.setItem(`voted_ticket_type_race_${currentRaceDay}`, currentTicketType);
       localStorage.setItem(`voted_option_id_race_${currentRaceDay}`, selectedOption);
       showVotedScreen(currentTicketType, selectedOption);
 
       if (GAS_WEB_APP_URL && !GAS_WEB_APP_URL.includes("YOUR_GAS_WEB_APP_URL")) {
-        try {
-          const response = await fetch(GAS_WEB_APP_URL, {
-            method: 'POST',
-            mode: 'cors',
-            headers: { 'Content-Type': 'text/plain' },
-            body: JSON.stringify({ type: currentTicketType, option: selectedOption })
-          });
-          const data = await response.json();
+        const data = await fetchWithRetry(GAS_WEB_APP_URL, {
+          method: 'POST',
+          mode: 'cors',
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify({ type: currentTicketType, option: selectedOption })
+        });
+
+        if (data) {
           renderResultsGraph(data);
           renderAdminData(data);
-        } catch (err) {
-          console.error(err);
-          fetchResults(true);
         }
       }
 
@@ -1366,31 +1375,19 @@
       btnAdminLogin.disabled = true;
       btnAdminLogin.textContent = '認証中...';
 
-      try {
-        const response = await fetch(GAS_WEB_APP_URL, {
-          method: 'POST',
-          mode: 'cors',
-          headers: { 'Content-Type': 'text/plain' },
-          body: JSON.stringify({ action: 'verifyAdminPassword', password: pass })
-        });
-        const res = await response.json();
+      const res = await fetchWithRetry(GAS_WEB_APP_URL, {
+        method: 'POST',
+        mode: 'cors',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action: 'verifyAdminPassword', password: pass })
+      });
 
-        if (res.success) {
-          adminAuth.classList.add('hidden');
-          adminControls.classList.remove('hidden');
-          fetchResults(true);
-        } else {
-          alert('パスワードが違います');
-        }
-      } catch (e) {
-        console.error(e);
-        if (pass === 'admin123') {
-          adminAuth.classList.add('hidden');
-          adminControls.classList.remove('hidden');
-          fetchResults(true);
-        } else {
-          alert('パスワードが違います');
-        }
+      if (res && res.success) {
+        adminAuth.classList.add('hidden');
+        adminControls.classList.remove('hidden');
+        fetchResults(true);
+      } else {
+        alert('パスワードが違います（または接続エラー）');
       }
 
       btnAdminLogin.disabled = false;
@@ -1402,16 +1399,12 @@
       updateDeliberationUI();
 
       if (GAS_WEB_APP_URL && !GAS_WEB_APP_URL.includes("YOUR_GAS_WEB_APP_URL")) {
-        try {
-          await fetch(GAS_WEB_APP_URL, {
-            method: 'POST',
-            mode: 'cors',
-            headers: { 'Content-Type': 'text/plain' },
-            body: JSON.stringify({ action: 'setDeliberating', isDeliberating: isDeliberating })
-          });
-        } catch (e) {
-          console.error(e);
-        }
+        fetchWithRetry(GAS_WEB_APP_URL, {
+          method: 'POST',
+          mode: 'cors',
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify({ action: 'setDeliberating', isDeliberating: isDeliberating })
+        });
       }
     };
 
@@ -1454,23 +1447,16 @@
       updateDeliberationUI();
 
       if (GAS_WEB_APP_URL && !GAS_WEB_APP_URL.includes("YOUR_GAS_WEB_APP_URL")) {
-        try {
-          await fetch(GAS_WEB_APP_URL, {
-            method: 'POST',
-            mode: 'cors',
-            headers: { 'Content-Type': 'text/plain' },
-            body: JSON.stringify({ action: 'setWinningNumbers', win1st: w1, win2nd: w2, win3rd: w3 })
-          });
-          
-          setTimeout(async () => {
-            await fetchResults(true);
-            alert(`${currentRaceDay}日目の着順結果を確定（審議解除）しました！`);
-          }, 400);
-
-        } catch (err) {
-          console.error(err);
-          alert('送信中にエラーが発生しましたが、画面表示を更新しました。');
+        const data = await fetchWithRetry(GAS_WEB_APP_URL, {
+          method: 'POST',
+          mode: 'cors',
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify({ action: 'setWinningNumbers', win1st: w1, win2nd: w2, win3rd: w3 })
+        });
+        
+        if (data) {
           fetchResults(true);
+          alert(`${currentRaceDay}日目の着順結果を確定（審議解除）しました！`);
         }
       }
 
@@ -1492,23 +1478,16 @@
       win3rd = 0;
 
       if (GAS_WEB_APP_URL && !GAS_WEB_APP_URL.includes("YOUR_GAS_WEB_APP_URL")) {
-        try {
-          await fetch(GAS_WEB_APP_URL, {
-            method: 'POST',
-            mode: 'cors',
-            headers: { 'Content-Type': 'text/plain' },
-            body: JSON.stringify({ action: 'setWinningNumbers', win1st: 0, win2nd: 0, win3rd: 0 })
-          });
-          
-          setTimeout(async () => {
-            await fetchResults(true);
-            alert(`${currentRaceDay}日目の着順を未確定にリセットしました！`);
-          }, 400);
-
-        } catch (err) {
-          console.error(err);
-          alert('リセット処理中にエラーが発生しました');
+        const data = await fetchWithRetry(GAS_WEB_APP_URL, {
+          method: 'POST',
+          mode: 'cors',
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify({ action: 'setWinningNumbers', win1st: 0, win2nd: 0, win3rd: 0 })
+        });
+        
+        if (data) {
           fetchResults(true);
+          alert(`${currentRaceDay}日目の着順を未確定にリセットしました！`);
         }
       }
 
@@ -1526,25 +1505,19 @@
 
       btnChangePass.disabled = true;
 
-      try {
-        const response = await fetch(GAS_WEB_APP_URL, {
-          method: 'POST',
-          mode: 'cors',
-          headers: { 'Content-Type': 'text/plain' },
-          body: JSON.stringify({ action: 'changeAdminPassword', oldPassword: oldPass, newPassword: newPass })
-        });
-        const res = await response.json();
+      const res = await fetchWithRetry(GAS_WEB_APP_URL, {
+        method: 'POST',
+        mode: 'cors',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action: 'changeAdminPassword', oldPassword: oldPass, newPassword: newPass })
+      });
 
-        if (res.success) {
-          alert('パスワードを変更しました！');
-          inputOldPass.value = '';
-          inputNewPass.value = '';
-        } else {
-          alert(res.message || '現在のパスワードが違います');
-        }
-      } catch (e) {
-        console.error(e);
-        alert('変更エラーが発生しました');
+      if (res && res.success) {
+        alert('パスワードを変更しました！');
+        inputOldPass.value = '';
+        inputNewPass.value = '';
+      } else {
+        alert((res && res.message) || 'パスワード変更エラーが発生しました');
       }
 
       btnChangePass.disabled = false;
